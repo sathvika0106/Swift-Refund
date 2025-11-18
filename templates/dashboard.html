@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwiftRefund Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .header h1 {
+            margin-bottom: 10px;
+        }
+        
+        .header a {
+            color: white;
+            text-decoration: none;
+            margin-right: 20px;
+            font-weight: 600;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-card h3 {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .section {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .section h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .badge-positive {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .badge-negative {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .badge-neutral {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+        
+        .badge-high {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .badge-normal {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .badge-expedited {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        .refresh-btn:hover {
+            background: #5568d3;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>SwiftRefund Dashboard</h1>
+        <div>
+            <a href="/">Submit Review</a>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/reviews">API: Reviews</a>
+            <a href="/transactions">API: Transactions</a>
+        </div>
+    </div>
+    
+    <div class="stats" id="stats">
+        <div class="stat-card">
+            <h3>Total Reviews</h3>
+            <div class="value" id="total-reviews">-</div>
+        </div>
+        <div class="stat-card">
+            <h3>Total Transactions</h3>
+            <div class="value" id="total-transactions">-</div>
+        </div>
+        <div class="stat-card">
+            <h3>Expedited Refunds</h3>
+            <div class="value" id="expedited-refunds">-</div>
+        </div>
+        <div class="stat-card">
+            <h3>Pending Refunds</h3>
+            <div class="value" id="pending-refunds">-</div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Recent Reviews</h2>
+        <button class="refresh-btn" onclick="loadReviews()">Refresh</button>
+        <div id="reviews-container">
+            <div class="loading">Loading reviews...</div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Recent Transactions</h2>
+        <button class="refresh-btn" onclick="loadTransactions()">Refresh</button>
+        <div id="transactions-container">
+            <div class="loading">Loading transactions...</div>
+        </div>
+    </div>
+    
+    <script>
+        async function loadStats() {
+            try {
+                const response = await fetch('/stats');
+                const data = await response.json();
+                
+                document.getElementById('total-reviews').textContent = data.total_reviews || 0;
+                document.getElementById('total-transactions').textContent = data.total_transactions || 0;
+                document.getElementById('expedited-refunds').textContent = data.expedited_refunds || 0;
+                document.getElementById('pending-refunds').textContent = data.pending_refunds || 0;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+        
+        async function loadReviews() {
+            const container = document.getElementById('reviews-container');
+            container.innerHTML = '<div class="loading">Loading reviews...</div>';
+            
+            try {
+                const response = await fetch('/reviews');
+                const reviews = await response.json();
+                
+                if (reviews.length === 0) {
+                    container.innerHTML = '<p>No reviews found.</p>';
+                    return;
+                }
+                
+                let html = '<table><thead><tr><th>ID</th><th>Customer ID</th><th>Review</th><th>Sentiment</th><th>Polarity</th><th>Transaction</th><th>Date</th></tr></thead><tbody>';
+                
+                reviews.forEach(review => {
+                    const sentimentClass = `badge-${review.sentiment}`;
+                    const reviewText = review.review_text.length > 50 
+                        ? review.review_text.substring(0, 50) + '...' 
+                        : review.review_text;
+                    
+                    html += `
+                        <tr>
+                            <td>${review.id}</td>
+                            <td>${review.customer_id}</td>
+                            <td>${reviewText}</td>
+                            <td><span class="badge ${sentimentClass}">${review.sentiment}</span></td>
+                            <td>${review.polarity ? review.polarity.toFixed(3) : '-'}</td>
+                            <td>${review.transaction_id ? `#${review.transaction_id}` : '-'}</td>
+                            <td>${new Date(review.created_at).toLocaleString()}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            } catch (error) {
+                container.innerHTML = `<p style="color: red;">Error loading reviews: ${error.message}</p>`;
+            }
+        }
+        
+        async function loadTransactions() {
+            const container = document.getElementById('transactions-container');
+            container.innerHTML = '<div class="loading">Loading transactions...</div>';
+            
+            try {
+                const response = await fetch('/transactions');
+                const transactions = await response.json();
+                
+                if (transactions.length === 0) {
+                    container.innerHTML = '<p>No transactions found.</p>';
+                    return;
+                }
+                
+                let html = '<table><thead><tr><th>ID</th><th>Customer ID</th><th>Amount</th><th>Status</th><th>Refund Status</th><th>Priority</th><th>Sentiment</th><th>Date</th></tr></thead><tbody>';
+                
+                transactions.forEach(transaction => {
+                    const priorityClass = transaction.priority === 'high' ? 'badge-high' : 'badge-normal';
+                    const refundClass = transaction.refund_status === 'expedited' ? 'badge-expedited' : 'badge-normal';
+                    
+                    html += `
+                        <tr>
+                            <td>${transaction.id}</td>
+                            <td>${transaction.customer_id}</td>
+                            <td>$${parseFloat(transaction.amount).toFixed(2)}</td>
+                            <td>${transaction.status}</td>
+                            <td><span class="badge ${refundClass}">${transaction.refund_status}</span></td>
+                            <td><span class="badge ${priorityClass}">${transaction.priority}</span></td>
+                            <td>${transaction.sentiment ? `<span class="badge badge-${transaction.sentiment}">${transaction.sentiment}</span>` : '-'}</td>
+                            <td>${new Date(transaction.created_at).toLocaleString()}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            } catch (error) {
+                container.innerHTML = `<p style="color: red;">Error loading transactions: ${error.message}</p>`;
+            }
+        }
+        
+        // Load data on page load
+        loadStats();
+        loadReviews();
+        loadTransactions();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            loadStats();
+            loadReviews();
+            loadTransactions();
+        }, 30000);
+    </script>
+</body>
+</html>
+
